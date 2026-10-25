@@ -3,17 +3,21 @@ package io.kestra.plugin.garmin.activities;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.core.utils.TestsUtils;
 import io.kestra.plugin.garmin.MockGarminServer;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.UUID;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @KestraTest
 class TriggerTest {
@@ -23,15 +27,19 @@ class TriggerTest {
     private RunContextFactory runContextFactory;
 
     private Trigger trigger(MockGarminServer server) {
+        return trigger(server, Duration.ofHours(2));
+    }
+
+    private Trigger trigger(MockGarminServer server, Duration lookback) {
         return Trigger.builder()
-            .id("trigger-" + UUID.randomUUID())
+            .id(IdUtils.create())
             .type(Trigger.class.getName())
             .baseUrl(Property.ofValue(server.url()))
             .consumerKey(Property.ofValue("consumer-key"))
             .consumerSecret(Property.ofValue("consumer-secret"))
             .accessToken(Property.ofValue("token"))
             .accessTokenSecret(Property.ofValue("token-secret"))
-            .initialLookback(Property.ofValue(Duration.ofHours(2)))
+            .initialLookback(Property.ofValue(lookback))
             .build();
     }
 
@@ -76,8 +84,39 @@ class TriggerTest {
             trigger.evaluate(context.getKey(), context.getValue());
 
             var query = server.lastRequest().uri().getQuery();
-            var params = java.util.Arrays.stream(query.split("&")).map(p -> p.split("=")).collect(java.util.stream.Collectors.toMap(p -> p[0], p -> Long.parseLong(p[1])));
+            var params = params(query);
             assertThat(params.get("uploadEndTimeInSeconds") - params.get("uploadStartTimeInSeconds"), is(7200L));
         }
+    }
+
+    @Test
+    void nextPollOverlapsThePreviousOne() throws Exception {
+        try (var server = new MockGarminServer().reply("GET", PATH, 200, "[]")) {
+            var trigger = trigger(server);
+            var context = TestsUtils.mockTrigger(runContextFactory, trigger);
+
+            trigger.evaluate(context.getKey(), context.getValue());
+            var first = params(server.lastRequest().uri().getQuery());
+            trigger.evaluate(context.getKey(), context.getValue());
+            var second = params(server.lastRequest().uri().getQuery());
+
+            var overlap = first.get("uploadEndTimeInSeconds") - second.get("uploadStartTimeInSeconds");
+            assertThat(overlap >= Trigger.POLL_OVERLAP.toSeconds(), is(true));
+        }
+    }
+
+    @Test
+    void rejectsANonPositiveInitialLookback() throws Exception {
+        try (var server = new MockGarminServer()) {
+            var trigger = trigger(server, Duration.ZERO);
+            var context = TestsUtils.mockTrigger(runContextFactory, trigger);
+
+            var exception = assertThrows(IllegalArgumentException.class, () -> trigger.evaluate(context.getKey(), context.getValue()));
+            assertThat(exception.getMessage(), containsString("initialLookback"));
+        }
+    }
+
+    private static Map<String, Long> params(String query) {
+        return Arrays.stream(query.split("&")).map(p -> p.split("=")).collect(Collectors.toMap(p -> p[0], p -> Long.parseLong(p[1])));
     }
 }

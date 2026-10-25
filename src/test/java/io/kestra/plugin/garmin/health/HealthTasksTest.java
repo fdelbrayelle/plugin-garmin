@@ -3,6 +3,7 @@ package io.kestra.plugin.garmin.health;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.garmin.AbstractListTask;
 import io.kestra.plugin.garmin.MockGarminServer;
 import jakarta.inject.Inject;
@@ -23,29 +24,29 @@ class HealthTasksTest {
 
     @Test
     void dailies() throws Exception {
-        assertListsFrom("/wellness-api/rest/dailies", () -> Dailies.builder());
+        assertListsFrom("/wellness-api/rest/dailies", Dailies.class, () -> Dailies.builder());
     }
 
     @Test
     void sleeps() throws Exception {
-        assertListsFrom("/wellness-api/rest/sleeps", () -> Sleeps.builder());
+        assertListsFrom("/wellness-api/rest/sleeps", Sleeps.class, () -> Sleeps.builder());
     }
 
     @Test
     void stress() throws Exception {
-        assertListsFrom("/wellness-api/rest/stressDetails", () -> Stress.builder());
+        assertListsFrom("/wellness-api/rest/stressDetails", Stress.class, () -> Stress.builder());
     }
 
     @Test
     void bodyCompositions() throws Exception {
-        assertListsFrom("/wellness-api/rest/bodyComps", () -> BodyCompositions.builder());
+        assertListsFrom("/wellness-api/rest/bodyComps", BodyCompositions.class, () -> BodyCompositions.builder());
     }
 
-    private void assertListsFrom(String path, Supplier<AbstractListTask.AbstractListTaskBuilder<?, ?>> builder) throws Exception {
+    private void assertListsFrom(String path, Class<?> type, Supplier<AbstractListTask.AbstractListTaskBuilder<?, ?>> builder) throws Exception {
         try (var server = new MockGarminServer().reply("GET", path, 200, "[{\"summaryId\":\"s1\"},{\"summaryId\":\"s2\"}]")) {
             var task = builder.get()
-                .id("health")
-                .type("io.kestra.plugin.garmin.health.Test")
+                .id(IdUtils.create())
+                .type(type.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("consumer-key"))
                 .consumerSecret(Property.ofValue("consumer-secret"))

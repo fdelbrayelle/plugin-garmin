@@ -3,6 +3,8 @@ package io.kestra.plugin.garmin.activities;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
+import io.kestra.plugin.garmin.GarminClient;
 import io.kestra.plugin.garmin.MockGarminServer;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ class GetTest {
 
     private Get.GetBuilder<?, ?> task(MockGarminServer server, String activityId) {
         return Get.builder()
-            .id("get")
+            .id(IdUtils.create())
             .type(Get.class.getName())
             .baseUrl(Property.ofValue(server.url()))
             .consumerKey(Property.ofValue("consumer-key"))
@@ -63,5 +65,21 @@ class GetTest {
 
             assertThat(exception.getMessage(), containsString("Widen"));
         }
+    }
+
+    @Test
+    void rejectsABaseUrlWithoutSchemeOrHost() throws Exception {
+        try (var server = new MockGarminServer()) {
+            var exception = assertThrows(IllegalArgumentException.class, () -> task(server, "a1").baseUrl(Property.ofValue("apis.garmin.com")).build().run(runContextFactory.of(Map.of())));
+
+            assertThat(exception.getMessage(), containsString("baseUrl"));
+        }
+    }
+
+    @Test
+    void rejectsDotSegmentsInPaths() {
+        assertThrows(IllegalArgumentException.class, () -> GarminClient.pathSegment(".."));
+        assertThrows(IllegalArgumentException.class, () -> GarminClient.pathSegment("."));
+        assertThat(GarminClient.pathSegment("a b"), is("a%20b"));
     }
 }

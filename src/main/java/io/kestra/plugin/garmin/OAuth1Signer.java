@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.crypto.Mac;
@@ -75,16 +76,16 @@ public final class OAuth1Signer {
             .map(p -> p[0] + "=" + p[1])
             .collect(Collectors.joining("&"));
 
-        var baseString = method.toUpperCase() + "&" + encode(baseUri(uri)) + "&" + encode(normalized);
+        var baseString = method.toUpperCase(Locale.ROOT) + "&" + encode(baseUri(uri)) + "&" + encode(normalized);
         var signingKey = encode(consumerSecret) + "&" + encode(tokenSecret);
         return hmacSha1(signingKey, baseString);
     }
 
     private static String baseUri(URI uri) {
-        var scheme = uri.getScheme().toLowerCase();
+        var scheme = uri.getScheme().toLowerCase(Locale.ROOT);
         var port = uri.getPort();
         var defaultPort = ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
-        var authority = uri.getHost().toLowerCase() + (port < 0 || defaultPort ? "" : ":" + port);
+        var authority = uri.getHost().toLowerCase(Locale.ROOT) + (port < 0 || defaultPort ? "" : ":" + port);
         var path = uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath();
         return scheme + "://" + authority + path;
     }

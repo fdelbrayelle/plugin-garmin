@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * Short-lived Garmin Connect API client: built inside a task run, signs each request with OAuth 1.0a and is closed with it.
- */
 public final class GarminClient implements Closeable {
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
     private static final int MAX_ERROR_BODY_LENGTH = 500;
@@ -47,6 +44,7 @@ public final class GarminClient implements Closeable {
 
     public static GarminClient create(RunContext runContext, GarminConnection connection) throws IllegalVariableEvaluationException {
         var rBaseUrl = render(runContext, connection.getBaseUrl(), GarminConnection.DEFAULT_BASE_URL);
+        validateBaseUrl(rBaseUrl);
         var rTimeout = runContext.render(connection.getTimeout()).as(Duration.class).orElse(DEFAULT_TIMEOUT);
         var signer = new OAuth1Signer(
             required(runContext, connection.getConsumerKey(), "consumerKey"),
@@ -65,7 +63,23 @@ public final class GarminClient implements Closeable {
         return new GarminClient(httpClient, rBaseUrl.replaceAll("/+$", ""), signer);
     }
 
+    private static void validateBaseUrl(String baseUrl) {
+        URI uri;
+        try {
+            uri = URI.create(baseUrl.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid 'baseUrl' '" + baseUrl + "': " + e.getMessage(), e);
+        }
+        var scheme = uri.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) || uri.getHost() == null) {
+            throw new IllegalArgumentException("Invalid 'baseUrl' '" + baseUrl + "': it must be an absolute http(s) URL with a host, for example https://apis.garmin.com");
+        }
+    }
+
     public static String pathSegment(String value) {
+        if (".".equals(value) || "..".equals(value)) {
+            throw new IllegalArgumentException("Invalid path segment '" + value + "': '.' and '..' are not allowed in an identifier");
+        }
         return OAuth1Signer.encode(value);
     }
 

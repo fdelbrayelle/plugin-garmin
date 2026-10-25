@@ -80,6 +80,8 @@ import java.util.Set;
 public class Trigger extends AbstractTrigger implements PollingTriggerInterface, GarminConnection, TriggerOutput<Trigger.Output> {
     private static final String PATH = "/wellness-api/rest/activities";
     private static final Duration MAX_RANGE = Duration.ofHours(24);
+    // Garmin may expose an upload slightly after its upload time: re-read a short window and dedupe on delivered ids.
+    static final Duration POLL_OVERLAP = Duration.ofMinutes(5);
 
     @Schema(
         title = "Polling interval",
@@ -91,7 +93,7 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
 
     @Schema(
         title = "Initial lookback",
-        description = "On the first poll, fetch the activities uploaded during this duration. Capped at 24 hours, defaults to 1 hour."
+        description = "On the first poll, fetch the activities uploaded during this duration. Must be positive, capped at 24 hours, defaults to 1 hour."
     )
     @Builder.Default
     @PluginProperty(group = "execution")
@@ -161,9 +163,13 @@ public class Trigger extends AbstractTrigger implements PollingTriggerInterface,
         var now = Instant.now();
         var state = readState(kv.getValue(key).map(v -> v.value()).orElse(null));
         var floor = now.minus(MAX_RANGE);
+        var rLookback = runContext.render(initialLookback).as(Duration.class).orElse(Duration.ofHours(1));
+        if (rLookback.isZero() || rLookback.isNegative()) {
+            throw new IllegalArgumentException("'initialLookback' must be a positive duration, got '" + rLookback + "'. Use for example PT1H");
+        }
         var start = state.watermark() != null
-            ? state.watermark()
-            : now.minus(runContext.render(initialLookback).as(Duration.class).orElse(Duration.ofHours(1)));
+            ? state.watermark().minus(POLL_OVERLAP)
+            : now.minus(rLookback);
         if (start.isBefore(floor)) {
             logger.warn("Last Garmin poll is older than 24 hours, only the activities of the last 24 hours are fetched");
             start = floor;

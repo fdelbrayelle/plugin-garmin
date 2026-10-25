@@ -3,6 +3,7 @@ package io.kestra.plugin.garmin.activities;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.garmin.MockGarminServer;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class DownloadTest {
 
     private Download.DownloadBuilder<?, ?> task(MockGarminServer server, String activityId) {
         return Download.builder()
-            .id("download")
+            .id(IdUtils.create())
             .type(Download.class.getName())
             .baseUrl(Property.ofValue(server.url()))
             .consumerKey(Property.ofValue("consumer-key"))

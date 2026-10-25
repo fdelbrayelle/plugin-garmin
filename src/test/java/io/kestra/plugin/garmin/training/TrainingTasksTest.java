@@ -3,6 +3,7 @@ package io.kestra.plugin.garmin.training;
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.garmin.MockGarminServer;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ class TrainingTasksTest {
     void createWorkout() throws Exception {
         try (var server = new MockGarminServer().reply("POST", "/training-api/workout", 200, "{\"workoutId\":123456}")) {
             var output = CreateWorkout.builder()
-                .id("create").type(CreateWorkout.class.getName())
+                .id(IdUtils.create()).type(CreateWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -45,7 +46,7 @@ class TrainingTasksTest {
     void createWorkoutFailsWithoutAnId() throws Exception {
         try (var server = new MockGarminServer().reply("POST", "/training-api/workout", 200, "{}")) {
             var task = CreateWorkout.builder()
-                .id("create").type(CreateWorkout.class.getName())
+                .id(IdUtils.create()).type(CreateWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -62,7 +63,7 @@ class TrainingTasksTest {
     void createWorkoutReportsForbidden() throws Exception {
         try (var server = new MockGarminServer().reply("POST", "/training-api/workout", 403, "{\"errorMessage\":\"nope\"}")) {
             var task = CreateWorkout.builder()
-                .id("create").type(CreateWorkout.class.getName())
+                .id(IdUtils.create()).type(CreateWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -79,7 +80,7 @@ class TrainingTasksTest {
     void updateWorkout() throws Exception {
         try (var server = new MockGarminServer().reply("PUT", "/training-api/workout/123456", 204, new byte[0], Map.of())) {
             var output = UpdateWorkout.builder()
-                .id("update").type(UpdateWorkout.class.getName())
+                .id(IdUtils.create()).type(UpdateWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -97,7 +98,7 @@ class TrainingTasksTest {
     void deleteWorkout() throws Exception {
         try (var server = new MockGarminServer().reply("DELETE", "/training-api/workout/123456", 204, new byte[0], Map.of())) {
             var output = DeleteWorkout.builder()
-                .id("delete").type(DeleteWorkout.class.getName())
+                .id(IdUtils.create()).type(DeleteWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -113,7 +114,7 @@ class TrainingTasksTest {
     void deleteWorkoutEncodesTheIdentifierInThePath() throws Exception {
         try (var server = new MockGarminServer().reply("DELETE", "/training-api/workout/..%2Fcourses", 204, new byte[0], Map.of())) {
             DeleteWorkout.builder()
-                .id("delete").type(DeleteWorkout.class.getName())
+                .id(IdUtils.create()).type(DeleteWorkout.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
@@ -128,7 +129,7 @@ class TrainingTasksTest {
     void createCourse() throws Exception {
         try (var server = new MockGarminServer().reply("POST", "/training-api/courses/v1/course", 200, "{\"courseId\":\"c-9\"}")) {
             var output = CreateCourse.builder()
-                .id("course").type(CreateCourse.class.getName())
+                .id(IdUtils.create()).type(CreateCourse.class.getName())
                 .baseUrl(Property.ofValue(server.url()))
                 .consumerKey(Property.ofValue("k")).consumerSecret(Property.ofValue("s"))
                 .accessToken(Property.ofValue("t")).accessTokenSecret(Property.ofValue("ts"))
