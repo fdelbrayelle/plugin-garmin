@@ -2,46 +2,40 @@
 
 ## What
 
-- Provides plugin components under `io.kestra.plugin.garmin`.
-- Includes classes such as `Example`, `Trigger`.
+- Plugin for the Garmin Connect Developer Program cloud APIs (Activity, Health, Training, Courses), under `io.kestra.plugin.garmin`.
 
 ## Why
 
-- What user problem does this solve? Teams need a concrete starting point for building and validating new Kestra plugins without recreating the same project scaffolding from scratch.
-- Why would a team adopt this plugin in a workflow? It gives plugin authors a ready-made reference repo they can adapt alongside their own build, test, and publishing workflow.
-- What operational/business outcome does it enable? It shortens plugin delivery time, reduces setup mistakes, and makes internal or partner plugin development more repeatable.
+- Lets Kestra flows read Garmin activities and health metrics and publish workouts and courses.
 
 ## How
 
 ### Architecture
 
-Single-module plugin. Source packages under `io.kestra.plugin`:
+Single-module plugin, root package `io.kestra.plugin.garmin` holds only shared code; tasks and triggers live in sub-packages.
 
-- `garmin`
+- `garmin`: `GarminConnection` (connection properties contract), `AbstractGarminTask`, `AbstractTimeRangeTask`, `AbstractListTask` (time-range list tasks with `fetchType`), `GarminClient` (Kestra HTTP client + signing, created per run) and `OAuth1Signer` (OAuth 1.0a HMAC-SHA1).
+- `garmin.activities`: `List`, `Get`, `Download`, `Trigger` (polling, watermark and delivered ids in the namespace KV Store).
+- `garmin.health`: `Dailies`, `Sleeps`, `Stress`, `BodyCompositions`.
+- `garmin.training`: `CreateWorkout`, `UpdateWorkout`, `DeleteWorkout`, `CreateCourse`.
 
-Infrastructure dependencies (Docker Compose services):
-
-- `app`
-
-### Key Plugin Classes
-
-- `io.kestra.plugin.garmin.Example`
+The task and trigger connection properties are declared twice (`AbstractGarminTask` and `activities.Trigger`) because a trigger cannot extend a task; keep them in sync.
 
 ### Project Structure
 
 ```
 plugin-garmin/
-├── src/main/java/io/kestra/plugin/garmin/
-├── src/test/java/io/kestra/plugin/garmin/
+├── src/main/java/io/kestra/plugin/garmin/{activities,health,training}/
+├── src/test/java/io/kestra/plugin/garmin/   (MockGarminServer: local JDK HTTP server, no Garmin sandbox exists)
 ├── build.gradle
 └── README.md
 ```
 
 ## Local rules
 
-- Base the wording on the implemented packages and classes, not on template README text.
+- Tests run against `MockGarminServer`; endpoint paths and payloads are based on Garmin's public descriptions and could not be verified against the gated API specification.
 
 ## References
 
 - https://kestra.io/docs/plugin-developer-guide
-- https://kestra.io/docs/plugin-developer-guide/contribution-guidelines
+- https://developer.garmin.com/gc-developer-program/
