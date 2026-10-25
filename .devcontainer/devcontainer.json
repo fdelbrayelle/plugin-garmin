@@ -1,10 +1,10 @@
 {
-  "name": "plugin-template",
+  "name": "plugin-garmin",
   "build": {
     "context": ".",
     "dockerfile": "Dockerfile"
   },
-  "workspaceFolder": "/workspaces/plugin-template",
+  "workspaceFolder": "/workspaces/plugin-garmin",
   "forwardPorts": [8080],
   "customizations": {
     "vscode": {
