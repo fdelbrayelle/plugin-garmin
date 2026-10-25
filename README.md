@@ -39,14 +39,30 @@
 
 ## Why
 
-- What user problem does this solve? Teams need a concrete starting point for building and validating new Kestra plugins without recreating the same project scaffolding from scratch.
-- Why would a team adopt this plugin in a workflow? It gives plugin authors a ready-made reference repo they can adapt alongside their own build, test, and publishing workflow.
-- What operational/business outcome does it enable? It shortens plugin delivery time, reduces setup mistakes, and makes internal or partner plugin development more repeatable.
+- Bring Garmin Connect data (activities, sleep, stress, steps, body composition) into your Kestra workflows for analytics, coaching or wellness reporting.
+- Publish workouts and courses to users' Garmin devices from your own planning tools.
 
 ## What
 
-- Provides plugin components under `io.kestra.plugin.garmin`.
-- Includes classes such as `Example`, `Trigger`.
+- `io.kestra.plugin.garmin.activities`: `List`, `Get`, `Download` and a polling `Trigger` for new activities.
+- `io.kestra.plugin.garmin.health`: `Dailies`, `Sleeps`, `Stress`, `BodyCompositions`.
+- `io.kestra.plugin.garmin.training`: `CreateWorkout`, `UpdateWorkout`, `DeleteWorkout`, `CreateCourse`.
+
+The plugin targets the [Garmin Connect Developer Program](https://developer.garmin.com/gc-developer-program/) APIs. Access is granted by Garmin per developer app. Requests are signed with OAuth 1.0a using the app consumer key/secret and the user access token/secret; see `src/main/resources/doc/io.kestra.plugin.garmin.md` for details.
+
+```yaml
+id: garmin_dailies
+namespace: company.team
+
+tasks:
+  - id: dailies
+    type: io.kestra.plugin.garmin.health.Dailies
+    consumerKey: "{{ secret('GARMIN_CONSUMER_KEY') }}"
+    consumerSecret: "{{ secret('GARMIN_CONSUMER_SECRET') }}"
+    accessToken: "{{ secret('GARMIN_ACCESS_TOKEN') }}"
+    accessTokenSecret: "{{ secret('GARMIN_ACCESS_TOKEN_SECRET') }}"
+    startTime: "2025-01-31T00:00:00Z"
+```
 
 ## Running Kestra locally with this plugin
 

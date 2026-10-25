@@ -1,0 +1,8 @@
+group: io.kestra.plugin.garmin.health
+name: "health"
+title: "Garmin health metrics"
+description: "Read all-day health metrics from the Garmin Connect Health API."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"

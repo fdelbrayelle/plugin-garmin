@@ -1,0 +1,8 @@
+group: io.kestra.plugin.garmin.activities
+name: "activities"
+title: "Garmin activities"
+description: "Read activity summaries, details and files from the Garmin Connect Activity API."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
