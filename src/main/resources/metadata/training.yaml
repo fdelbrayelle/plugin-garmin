@@ -1,0 +1,8 @@
+group: io.kestra.plugin.garmin.training
+name: "training"
+title: "Garmin training"
+description: "Publish workouts and courses with the Garmin Connect Training and Courses APIs."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
